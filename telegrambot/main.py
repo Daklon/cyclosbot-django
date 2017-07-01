@@ -4,16 +4,16 @@ import logging
 import asyncio
 
 import sys
+sys.path.append('../cyclosbot/')
 import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cyclosbot.settings")
 import django
-from bot.models import TelegramUser
+django.setup()
 from telepot.aio.delegate import (pave_event_space, per_chat_id,
                                   create_open)
 from config import (TOKEN, TIMEOUT, DEBUG_LEVEL, LOG_DIR)
-
-sys.path.append('../cyclosbot/')
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "cyclosbot.settings")
-django.setup()
+from bot.models import TelegramUser
+from django.core.exceptions import ObjectDoesNotExist
 
 
 class BotHandler(telepot.aio.helper.ChatHandler):
@@ -28,8 +28,11 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         logging.info("received message from: %s", this_chat_id)
         logging.debug(msg['text'])
 
-        me = TelegramUser.objects.get(chat_id=this_chat_id)
-        if me.exist():
+        try:
+            me = TelegramUser.objects.get(chat_id=this_chat_id)
+        except ObjectDoesNotExist:
+            me = None
+        if me is not None:
             await self.process(msg, me)
         else:
             await self.register(msg, this_chat_id)
@@ -42,7 +45,7 @@ class BotHandler(telepot.aio.helper.ChatHandler):
                                       + ' tu usuario de la web')
 
     async def process(self, msg, me):
-        self.status[me.conversation_status](msg, me)
+        await self.status[me.conversation_status](msg, me)
 
     async def wait_username(self, msg, me):
         me.username = msg['text']
