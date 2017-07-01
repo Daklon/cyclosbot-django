@@ -2,8 +2,8 @@
 telegram bot that connect to cyclos platform
 
 # Current features
-1. Register users (refactoring)
-2. Check balance of registered users (refactoring)
+1. Register users 
+2. Check balance of registered users
 
 # TODO
 1. Post anounces 
@@ -12,7 +12,6 @@ telegram bot that connect to cyclos platform
 	3. ask body
 	4. ask image(optional)
 	5. post
-2. Refactor the code (in progress)
-3. Make payments
-4. Add funtion to list anounces
-5. Search anounces
+2. Make payments
+3. Add funtion to list anounces
+4. Search anounces
