@@ -44,9 +44,37 @@ def search(name, password, keyword):
 
 
 # Create new advertisement
-def create(name, password, data):
+def create_advert(name, password, title, body, parent, child, price):
+    payload = {
+              "name": title,
+              "description": body,
+              "publicationPeriod": {
+                "begin": "2017-03-31T22:35:15.304Z",
+                "end": "2018-03-30T22:35:15.304Z"
+              },
+              "categories": [
+                "7762070814178002239"
+              ],
+              "currency": "7762070814178012479",
+              "price": price,
+              "promotionalPrice": price,
+              "promotionalPeriod": {
+                "begin": "2017-03-31T22:35:15.304Z",
+                "end": "2017-03-31T22:35:15.304Z"
+              },
+              "customValues": {},
+              "addresses": [
+              "adress"
+              ],
+              "kind": "simple",
+              "submitForAuthorization": 'true',
+              "hidden": 'true',
+              "images": [
+              "string"
+              ]
+              }
     response = requests.post(_url(name+'/marketplace'),
-                             json=data,
+                             json=payload,
                              auth=authentication(name, password))
     if (response.status_code == 200):
         return True
