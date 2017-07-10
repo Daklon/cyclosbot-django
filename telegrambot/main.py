@@ -14,13 +14,22 @@ from telepot.aio.delegate import (pave_event_space, per_chat_id,
 from config import (TOKEN, TIMEOUT, DEBUG_LEVEL, LOG_DIR)
 from bot.models import TelegramUser
 from django.core.exceptions import ObjectDoesNotExist
+from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
 
 
 class BotHandler(telepot.aio.helper.ChatHandler):
     def __init__(self, *args, **kwargs):
         super(BotHandler, self).__init__(*args, **kwargs)
-        self.flow = {0: self.wait_username, 1: self.wait_password, }
-        self.entry_point = {'saldo': self.account_balance, 'ayuda': self.send_help}
+        self.advert_parent_category = None
+        self.categories = [[]]
+        self.subcategories = [[]]
+        self.flow = {0: self.wait_username, 1: self.wait_password,
+                     2: self.new_advert, 3: self.new_advert,
+                     4: self.ask_advert_title, 5: self.ask_advert_body,
+                     6: self.post_advert, }
+        self.entry_point = {'saldo': self.account_balance,
+                            'ayuda': self.send_help,
+                            'nuevo': self.new_advert, }
 
     async def on_chat_message(self, msg):
         content_type, chat_type, this_chat_id = telepot.glance(msg)
@@ -45,8 +54,11 @@ class BotHandler(telepot.aio.helper.ChatHandler):
                                       + ' tu usuario de la web')
 
     async def process(self, msg, me):
-        if (me.conversation_flow < 2):
-            await self.flow[me.conversation_status](msg, me)
+        if msg['text'].lower() == '/cancel':
+            me.conversation_flow = 99
+            me.save()
+        elif (me.conversation_flow < 7):
+            await self.flow[me.conversation_flow](msg, me)
         else:
             await self.entry_point[msg['text'].lower()](msg, me)
 
@@ -85,7 +97,8 @@ class BotHandler(telepot.aio.helper.ChatHandler):
             me.save()
 
     async def send_help(self, msg, me):
-        await self.sender.sendMessage('Esta es la ayuda')
+        await self.sender.sendMessage('De momento solo hay un comando')
+        await self.sender.sendMessage('Saldo: devuelve el saldo actual')
 
     async def account_balance(self, msg, me):
         logging.debug("Waiting api answer")
@@ -96,6 +109,72 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         await self.sender.sendMessage('Saldo: ' + data['balance'] +
                                       '\nCrédito disponible: ' +
                                       data['availableBalance'])
+
+    async def new_advert(self, msg, me):
+        data = cyclos_api.get_marketplace_info(me.username, me.password)
+
+        # for each parent category, create new list, and append to
+        # the main list, then create a keyboard using this list and
+        # send it
+        if me.conversation_flow is not 2 and me.conversation_flow is not 3:
+            if len(data['categories']) > 0:
+                for parent in data['categories']:
+                    temps = []
+                    temps.append(parent['name'])
+                    self.categories.append(temps)
+
+                markup = ReplyKeyboardMarkup(keyboard=self.categories,
+                                             one_time_keyboard=True)
+                await self.sender.sendMessage('Selecciona en que categoría '
+                                              + 'deseas que aparezca el anuncio',
+                                              reply_markup=markup)
+                # set the flow to check the category in the next answer
+                me.conversation_flow = 2
+                me.save()
+        elif me.conversation_flow is 2:
+            # save the parent category
+            self.advert_parent_category = msg['text']
+            for parent in data['categories']:
+                if parent['name'] == msg['text']:
+                    for child in parent['children']:
+                        temps = []
+                        temps.append(child['name'])
+                        self.subcategories.append(temps)
+
+            markup = ReplyKeyboardMarkup(keyboard=self.subcategories,
+                                         one_time_keyboard=True)
+            await self.sender.sendMessage('Ahora elige la subcategoría'
+                                          + ' que mejor encaje',
+                                          reply_markup=markup)
+            # set the flow to process the subcategory in the next answer
+            me.conversation_flow = 3
+            me.save()
+        elif me.conversation_flow is 3:
+            # set the flow to ask the title
+            me.conversation_flow = 4
+            me.save()
+            # save the child category
+            self.advert_child_category = msg['text']
+            await self.sender.sendMessage('¿Cual será el título del anuncio?')
+
+    async def ask_advert_title(self, msg, me):
+        # set the flow to ask the body
+        me.conversation_flow = 5
+        me.save()
+        self.advert_title = msg['text']
+        await self.sender.sendMessage('¿Cual será el cuerpo del mensaje?')
+        await self.sender.sendMessage('Recuerda hacerlo en un solo mensaje')
+
+    async def ask_advert_body(self, msg, me):
+        # set the flow to post the advert
+        me.conversation_flow = 6
+        me.save()
+        self.advert_body = msg['text']
+        # await self.sender.sendMessage('¿Que foto tendrá el anuncio?')
+
+    async def post_advert(self, msg, me):
+        me.conversation_flow = 99
+        me.save()
 
     async def check_register(self, username, password):
         return cyclos_api.auth(username, password)
