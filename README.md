@@ -7,9 +7,6 @@ telegram bot that connect to cyclos platform
 
 # TODO
 1. Post anounces 
-	1. Check if there is subcategories, else stop asking category
-	2. ask title
-	3. ask body
 	4. ask image(optional)
 	5. post
 2. Make payments
