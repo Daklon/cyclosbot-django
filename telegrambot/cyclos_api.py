@@ -1,6 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 import config
+from datetime import datetime
 
 
 # function that return the url where the api is
@@ -45,22 +46,31 @@ def search(name, password, keyword):
 
 # Create new advertisement
 def create_advert(name, password, title, body, parent, child, price):
+    begin = datetime.today()
+    begin_formated = str(begin.year)+"-"+str(begin.month)+"-"+str(begin.day)+"T"+str(begin.hour)+":"+str(begin.minute)+":"+str(begin.second)+".304Z"
+    end = datetime(begin.year + 1, begin.month, begin.day)
+    end_formated = str(end.year)+"-"+str(end.month)+"-"+str(end.day)+"T"+str(end.hour)+":"+str(end.minute)+":"+str(end.second)+".304Z"
+    data = get_marketplace_info(name, password)
+    for parent_data in data['categories']:
+        if parent_data['name'] is parent:
+            parent = parent_data['id']
+    currency_id = get_marketplace_currency_id(name, password)
     payload = {
               "name": title,
               "description": body,
               "publicationPeriod": {
-                "begin": "2017-03-31T22:35:15.304Z",
-                "end": "2018-03-30T22:35:15.304Z"
+                "begin": begin_formated,
+                "end": end_formated
               },
               "categories": [
-                "7762070814178002239"
+                parent
               ],
-              "currency": "7762070814178012479",
+              "currency": currency_id,
               "price": price,
               "promotionalPrice": price,
               "promotionalPeriod": {
-                "begin": "2017-03-31T22:35:15.304Z",
-                "end": "2017-03-31T22:35:15.304Z"
+                "begin": begin_formated,
+                "end": begin_formated
               },
               "customValues": {},
               "addresses": [
@@ -73,9 +83,12 @@ def create_advert(name, password, title, body, parent, child, price):
               "string"
               ]
               }
+    print(payload)
+    print("------------------------------separator-----------------------------")
     response = requests.post(_url(name+'/marketplace'),
                              json=payload,
                              auth=authentication(name, password))
+    print(response.text)
     if (response.status_code == 200):
         return True
     else:
@@ -90,3 +103,16 @@ def get_marketplace_info(name, password):
                             params=payload,
                             auth=authentication(name, password))
     return response.json()
+
+
+# Get the currency id
+def get_marketplace_currency_id(name, password):
+    payload = {'fields': 'currencies', 'kind': 'simple'}
+    response = requests.get(_url('/marketplace/data-for-search'),
+                            params=payload,
+                            auth=authentication(name, password))
+    currency = response.json()
+    currency_id = currency['currencies'][0]['id']
+    print(currency_id)
+    print('---------------------------space-------------------------')
+    return currency_id
