@@ -47,14 +47,29 @@ def search(name, password, keyword):
 # Create new advertisement
 def create_advert(name, password, title, body, parent, child, price):
     begin = datetime.today()
-    begin_formated = str(begin.year)+"-"+str(begin.month)+"-"+str(begin.day)+"T"+str(begin.hour)+":"+str(begin.minute)+":"+str(begin.second)+".304Z"
-    end = datetime(begin.year + 1, begin.month, begin.day)
+    begin_formated = str(begin.year)+"-"+str(begin.month)+"-"+str(begin.day - 2)+"T"+str(begin.hour)+":"+str(begin.minute)+":"+str(begin.second)+".304Z"
+    end = datetime(begin.year + 1, begin.month, begin.day - 2)
     end_formated = str(end.year)+"-"+str(end.month)+"-"+str(end.day)+"T"+str(end.hour)+":"+str(end.minute)+":"+str(end.second)+".304Z"
     data = get_marketplace_info(name, password)
     for parent_data in data['categories']:
         if parent_data['name'] is parent:
             parent = parent_data['id']
     currency_id = get_marketplace_currency_id(name, password)
+    categories = get_marketplace_info(name, password)
+    print('parent')
+    print(parent)
+    print('----------------------space---------------------')
+    for parent_category in categories['categories']:
+        print(parent_category['name'])
+        if parent_category['name'] == parent:
+            print("ok")
+            parent_id = parent_category['id']
+            for children_category in parent_category['children']:
+                print(children_category)
+                if children_category['name'] == child:
+                    child_id = children_category['id']
+    print(parent_id)
+    print(child_id)
     payload = {
               "name": title,
               "description": body,
@@ -63,7 +78,7 @@ def create_advert(name, password, title, body, parent, child, price):
                 "end": end_formated
               },
               "categories": [
-                parent
+                child_id
               ],
               "currency": currency_id,
               "price": price,
@@ -77,8 +92,8 @@ def create_advert(name, password, title, body, parent, child, price):
               "adress"
               ],
               "kind": "simple",
-              "submitForAuthorization": 'true',
-              "hidden": 'true',
+              "submitForAuthorization": 'false',
+              "hidden": 'false',
               "images": [
               "string"
               ]
@@ -113,6 +128,4 @@ def get_marketplace_currency_id(name, password):
                             auth=authentication(name, password))
     currency = response.json()
     currency_id = currency['currencies'][0]['id']
-    print(currency_id)
-    print('---------------------------space-------------------------')
     return currency_id

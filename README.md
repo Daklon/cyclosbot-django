@@ -7,8 +7,8 @@ telegram bot that connect to cyclos platform
 
 # TODO
 1. Post anounces 
-	4. ask image(optional)
-	5. post
+	1. post
+	2. improve category management
 2. Make payments
 3. Add funtion to list anounces
 4. Search anounces

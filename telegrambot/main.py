@@ -173,6 +173,8 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         # await self.sender.sendMessage('¿Que foto tendrá el anuncio?')
 
     async def post_advert(self, msg, me):
+        await self.sender.sendMessage('Voy a crear el anuncio, dame un momento')
+        cyclos_api.create_advert(me.username, me.password, self.advert_title, self.advert_body, self.advert_parent_category, self.advert_child_category, self.advert_price)
         me.conversation_flow = 99
         me.save()
 
