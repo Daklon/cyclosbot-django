@@ -56,20 +56,12 @@ def create_advert(name, password, title, body, parent, child, price):
             parent = parent_data['id']
     currency_id = get_marketplace_currency_id(name, password)
     categories = get_marketplace_info(name, password)
-    print('parent')
-    print(parent)
-    print('----------------------space---------------------')
     for parent_category in categories['categories']:
-        print(parent_category['name'])
         if parent_category['name'] == parent:
-            print("ok")
             parent_id = parent_category['id']
             for children_category in parent_category['children']:
-                print(children_category)
                 if children_category['name'] == child:
                     child_id = children_category['id']
-    print(parent_id)
-    print(child_id)
     payload = {
               "name": title,
               "description": body,
@@ -98,13 +90,10 @@ def create_advert(name, password, title, body, parent, child, price):
               "string"
               ]
               }
-    print(payload)
-    print("------------------------------separator-----------------------------")
     response = requests.post(_url(name+'/marketplace'),
                              json=payload,
                              auth=authentication(name, password))
-    print(response.text)
-    if (response.status_code == 200):
+    if (response.status_code == 201):
         return True
     else:
         return False

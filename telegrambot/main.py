@@ -26,11 +26,11 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         self.flow = {0: self.wait_username, 1: self.wait_password,
                      2: self.new_advert, 3: self.new_advert,
                      4: self.ask_advert_title, 5: self.ask_advert_body,
-                     6: self.post_advert, 7: self.report_problem
+                     6: self.ask_price, 7: self.report_problem
                      }
         self.entry_point = {'saldo': self.account_balance,
                             'ayuda': self.send_help,
-                            'nuevo': self.new_advert,
+                            'nuevo anuncio': self.new_advert,
                             'reportar': self.report_problem, }
         self.default_keyboard = ReplyKeyboardMarkup(keyboard=[['Saldo', 'Nuevo anuncio', 'Ayuda'],
                                                               ['Reportar']])
@@ -62,8 +62,11 @@ class BotHandler(telepot.aio.helper.ChatHandler):
     #process the message
     async def process(self, msg, me):
         if msg['text'].lower() == '/cancel':
+            await self.sender.sendMessage('Cancelando',
+                                          reply_markup=self.default_keyboard)
             me.conversation_flow = 99
             me.save()
+            logging.debug('Conversation flow = %s',me.conversation_flow)
         elif (me.conversation_flow < 8):
             await self.flow[me.conversation_flow](msg, me)
         else:
@@ -89,7 +92,7 @@ class BotHandler(telepot.aio.helper.ChatHandler):
                                           + 'acceder a cyclos a '
                                           + 'través de mi',
                                           reply_markup=self.default_keyboard)
-            me.conversation_flow = 2
+            me.conversation_flow = 99
             me.save()
             await self.send_help(self, msg, me)
         else:
@@ -182,11 +185,31 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         me.conversation_flow = 6
         me.save()
         self.advert_body = msg['text']
+        await self.sender.sendMessage('¿Cuanto va a costar?')
+        await self.sender.sendMessage('usa unidades enteras, los decimales'
+                                      + ' no están soportados')
         # await self.sender.sendMessage('¿Que foto tendrá el anuncio?')
+
+    async def ask_price(self, msg, me):
+        if msg['text'].isdigit():
+            self.advert_price = msg['text']
+            await self.post_advert(msg, me)
+        else:
+            await self.sender.sendMessage('Por favor, introduce solo números'
+                                          + ' en el precio, el uso de comas '
+                                          + 'o puntos no está soportado')
 
     async def post_advert(self, msg, me):
         await self.sender.sendMessage('Voy a crear el anuncio, dame un momento')
-        cyclos_api.create_advert(me.username, me.password, self.advert_title, self.advert_body, self.advert_parent_category, self.advert_child_category, self.advert_price)
+        if cyclos_api.create_advert(me.username, me.password, self.advert_title, self.advert_body, self.advert_parent_category, self.advert_child_category, self.advert_price):
+            await self.sender.sendMessage('El anuncio ha sido creado '
+                                          + 'correctamente',
+                                          reply_markup=self.default_keyboard)
+        else:
+            await self.sender.sendMessage('Ha ocurrido un error y el '
+                                          + 'anuncio no ha podido ser '
+                                          + 'creado',
+                                          reply_markup=self.default_keyboard)
         me.conversation_flow = 99
         me.save()
 
