@@ -30,7 +30,9 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         self.entry_point = {'saldo': self.account_balance,
                             'ayuda': self.send_help,
                             'nuevo': self.new_advert, }
+        self.default_keyboard = ReplyKeyboardMarkup(keyboard=[['saldo','nuevo anuncio','ayuda']]);
 
+    # This is called when a new message arrives
     async def on_chat_message(self, msg):
         content_type, chat_type, this_chat_id = telepot.glance(msg)
 
@@ -46,6 +48,7 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         else:
             await self.register(msg, this_chat_id)
 
+    # it will register the new user in the bd
     async def register(self, msg, this_chat_id):
         me = TelegramUser(chat_id=this_chat_id, conversation_flow=0)
         me.save()
@@ -53,10 +56,12 @@ class BotHandler(telepot.aio.helper.ChatHandler):
                                       + ' solucionarlo, primero dime '
                                       + ' tu usuario de la web')
 
+    #process the message
     async def process(self, msg, me):
         if msg['text'].lower() == '/cancel':
             me.conversation_flow = 99
             me.save()
+            logging.debug(me.conversation_flow)
         elif (me.conversation_flow < 7):
             await self.flow[me.conversation_flow](msg, me)
         else:
@@ -80,7 +85,8 @@ class BotHandler(telepot.aio.helper.ChatHandler):
             # if works
             await self.sender.sendMessage('Enhorabuena, ya puedes '
                                           + 'acceder a cyclos a '
-                                          + 'través de mi')
+                                          + 'través de mi',
+                                          reply_markup=self.default_keyboard)
             me.conversation_flow = 2
             me.save()
             await self.send_help(self, msg, me)
@@ -97,8 +103,11 @@ class BotHandler(telepot.aio.helper.ChatHandler):
             me.save()
 
     async def send_help(self, msg, me):
-        await self.sender.sendMessage('De momento solo hay un comando')
+        await self.sender.sendMessage('Esta es la lista de  comandos')
         await self.sender.sendMessage('Saldo: devuelve el saldo actual')
+        await self.sender.sendMessage('Nuevo anuncio: Crear un anuncio nuevo')
+        await self.sender.sendMessage('Ayuda: muestra esta ayuda',
+                                      reply_markup=self.default_keyboard)
 
     async def account_balance(self, msg, me):
         logging.debug("Waiting api answer")
@@ -108,7 +117,8 @@ class BotHandler(telepot.aio.helper.ChatHandler):
 
         await self.sender.sendMessage('Saldo: ' + data['balance'] +
                                       '\nCrédito disponible: ' +
-                                      data['availableBalance'])
+                                      data['availableBalance'],
+                                      reply_markup=self.default_keyboard)
 
     async def new_advert(self, msg, me):
         data = cyclos_api.get_marketplace_info(me.username, me.password)
