@@ -11,7 +11,7 @@ import django
 django.setup()
 from telepot.aio.delegate import (pave_event_space, per_chat_id,
                                   create_open)
-from config import (TOKEN, TIMEOUT, DEBUG_LEVEL, LOG_DIR)
+from config import (TOKEN, TIMEOUT, DEBUG_LEVEL, LOG_DIR, ADMINID)
 from bot.models import TelegramUser
 from django.core.exceptions import ObjectDoesNotExist
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
@@ -26,11 +26,14 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         self.flow = {0: self.wait_username, 1: self.wait_password,
                      2: self.new_advert, 3: self.new_advert,
                      4: self.ask_advert_title, 5: self.ask_advert_body,
-                     6: self.post_advert, }
+                     6: self.post_advert, 7: self.report_problem
+                     }
         self.entry_point = {'saldo': self.account_balance,
                             'ayuda': self.send_help,
-                            'nuevo': self.new_advert, }
-        self.default_keyboard = ReplyKeyboardMarkup(keyboard=[['saldo','nuevo anuncio','ayuda']]);
+                            'nuevo': self.new_advert,
+                            'reportar': self.report_problem, }
+        self.default_keyboard = ReplyKeyboardMarkup(keyboard=[['Saldo', 'Nuevo anuncio', 'Ayuda'],
+                                                              ['Reportar']])
 
     # This is called when a new message arrives
     async def on_chat_message(self, msg):
@@ -61,8 +64,7 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         if msg['text'].lower() == '/cancel':
             me.conversation_flow = 99
             me.save()
-            logging.debug(me.conversation_flow)
-        elif (me.conversation_flow < 7):
+        elif (me.conversation_flow < 8):
             await self.flow[me.conversation_flow](msg, me)
         else:
             await self.entry_point[msg['text'].lower()](msg, me)
@@ -187,6 +189,23 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         cyclos_api.create_advert(me.username, me.password, self.advert_title, self.advert_body, self.advert_parent_category, self.advert_child_category, self.advert_price)
         me.conversation_flow = 99
         me.save()
+
+    async def report_problem(self, msg, me):
+        if me.conversation_flow is 7:
+            await self.sender.forwardMessage(ADMINID,msg['message_id'])
+            me.conversation_flow = 99
+            me.save()
+        else:
+            await self.sender.sendMessage('De acuerdo, por favor, explica lo mejor'
+                                          + ' que puedas el problema, indicando '
+                                          + 'que querías hacer y que te ha '
+                                          + 'respondido el bot exactamente, si es '
+                                          + 'posible hazlo en un solo mensaje, si '
+                                          + 'no tendrás que usar el comando '
+                                          + 'reportar por cada mensaje que desees '
+                                          + 'enviar')
+            me.conversation_flow = 7
+            me.save()
 
     async def check_register(self, username, password):
         return cyclos_api.auth(username, password)
