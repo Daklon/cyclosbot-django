@@ -94,7 +94,7 @@ class BotHandler(telepot.aio.helper.ChatHandler):
                                           reply_markup=self.default_keyboard)
             me.conversation_flow = 99
             me.save()
-            await self.send_help(self, msg, me)
+            await self.send_help(msg, me)
         else:
             # if don't works
             await self.sender.sendMessage('Vaya, parece que tus '
