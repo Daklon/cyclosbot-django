@@ -26,14 +26,16 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         self.flow = {0: self.wait_username, 1: self.wait_password,
                      2: self.new_advert, 3: self.new_advert,
                      4: self.ask_advert_title, 5: self.ask_advert_body,
-                     6: self.ask_price, 7: self.report_problem
+                     6: self.ask_price, 7: self.report_problem,
+                     8: self.search_advert
                      }
         self.entry_point = {'saldo': self.account_balance,
                             'ayuda': self.send_help,
                             'nuevo anuncio': self.new_advert,
-                            'reportar': self.report_problem, }
+                            'reportar': self.report_problem,
+                            'buscar': self.search_advert, }
         self.default_keyboard = ReplyKeyboardMarkup(keyboard=[['Saldo', 'Nuevo anuncio', 'Ayuda'],
-                                                              ['Reportar']])
+                                                              ['Buscar', 'Reportar']])
 
     # This is called when a new message arrives
     async def on_chat_message(self, msg):
@@ -59,15 +61,15 @@ class BotHandler(telepot.aio.helper.ChatHandler):
                                       + ' solucionarlo, primero dime '
                                       + ' tu usuario de la web')
 
-    #process the message
+    # process the message
     async def process(self, msg, me):
         if msg['text'].lower() == '/cancel':
             await self.sender.sendMessage('Cancelando',
                                           reply_markup=self.default_keyboard)
             me.conversation_flow = 99
             me.save()
-            logging.debug('Conversation flow = %s',me.conversation_flow)
-        elif (me.conversation_flow < 8):
+            logging.debug('Conversation flow = %s', me.conversation_flow)
+        elif (me.conversation_flow < 9):
             await self.flow[me.conversation_flow](msg, me)
         else:
             await self.entry_point[msg['text'].lower()](msg, me)
@@ -124,6 +126,24 @@ class BotHandler(telepot.aio.helper.ChatHandler):
                                       '\nCrédito disponible: ' +
                                       data['availableBalance'],
                                       reply_markup=self.default_keyboard)
+
+    async def search_advert(self, msg, me):
+        logging.debug("Starting search")
+        if me.conversation_flow is 99:
+            await self.sender.sendMessage('¿Qué deseas buscar?')
+            await self.sender.sendMessage('Utiliza solo un mensaje por favor')
+            me.conversation_flow = 8
+            me.save()
+        elif (me.conversation_flow is 8):
+            data = cyclos_api.search(me.username, me.password, msg['text'])
+            for advert in data:
+                advert_styled = '<b>' + advert['name'] + '</b>\n'
+                advert_styled += advert['description'] + '\n'
+                advert_styled += 'Precio: ' + advert['price'] + '\n'
+                advert_styled += 'Dueño: ' + advert['owner']['display'] + '\n'
+                await self.sender.sendMessage(advert_styled, 'HTML')
+            me.conversation_flow = 99
+            me.save()
 
     async def new_advert(self, msg, me):
         data = cyclos_api.get_marketplace_info(me.username, me.password)

@@ -41,7 +41,13 @@ def auth(name, password):
 
 # Search advertisements
 def search(name, password, keyword):
-    pass
+    payload = {'pageSize': '10', 'keywords': keyword, 'kind': 'simple',
+               'orderBy': 'date', 'returnEditable': 'false'}
+    response = requests.get(_url('/marketplace'),
+                            params=payload,
+                            auth=authentication(name, password))
+    if (response.status_code == 200):
+        return response.json()
 
 
 # Create new advertisement
