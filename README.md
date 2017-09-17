@@ -14,21 +14,21 @@ Requirements: python 3.6, pip, django, postgres
 First we need to install postgres if we dont have it installed yet
 
 Debian/ubuntu:
-apt-get install postgresql
+`apt-get install postgresql`
 
 Then download the source where yo prefer
 
-git clone git clone https://github.com/Daklon/cyclosbot-django.git
+`git clone https://github.com/Daklon/cyclosbot-django.git`
 
 Also you can install virtualenv or similar but its out of the scope of this readme
 
 Now you must install the requirements
 
-pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 After that you have to configure django, go to cyclosbot/cyclosbot/settings.py
 Edit the secret key (generate a new one), and edit the database config to connect django to your database
-DATABASES = {
+`DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'djangobot',
@@ -37,13 +37,13 @@ DATABASES = {
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }
-}
+`}
 
 Create the users and database if you didnt have one
 http://www.sakana.fr/blog/2007/06/06/postgresql-create-a-user-a-database-and-grant-accesses/
 
-Now, in the root of django, you should fiil the databe
-python manage.py migrate
+Now, in the root of django, you should fiil the database
+`python manage.py migrate`
 
 Finally, go to the telegrambot dir, in the root of the project and edit config.py
 
