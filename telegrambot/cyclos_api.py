@@ -85,7 +85,10 @@ def create_advert(name, password, title, body, parent, child, price):
                 "begin": begin_formated,
                 "end": begin_formated
               },
-              "customValues": {},
+              "customValues": {
+                "type" : "7762070814178082111",
+                "EstadoProducto" : "7762070814179146815"
+              },
               "addresses": [
               "adress"
               ],

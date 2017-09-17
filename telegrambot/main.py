@@ -2,6 +2,7 @@ import cyclos_api
 import telepot
 import logging
 import asyncio
+import re
 
 import sys
 sys.path.append('../cyclosbot/')
@@ -15,6 +16,12 @@ from config import (TOKEN, TIMEOUT, DEBUG_LEVEL, LOG_DIR, ADMINID)
 from bot.models import TelegramUser
 from django.core.exceptions import ObjectDoesNotExist
 from telepot.namedtuple import ReplyKeyboardMarkup, KeyboardButton
+
+
+def cleanhtml(raw_html):
+    cleanr = re.compile('<.*?>')
+    cleantext = re.sub(cleanr, '', raw_html)
+    return cleantext
 
 
 class BotHandler(telepot.aio.helper.ChatHandler):
@@ -137,6 +144,7 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         elif (me.conversation_flow is 8):
             data = cyclos_api.search(me.username, me.password, msg['text'])
             for advert in data:
+                advert = cleanhtml(advert)
                 advert_styled = '<b>' + advert['name'] + '</b>\n'
                 advert_styled += advert['description'] + '\n'
                 advert_styled += 'Precio: ' + advert['price'] + '\n'
