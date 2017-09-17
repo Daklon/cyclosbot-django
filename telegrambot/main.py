@@ -144,11 +144,10 @@ class BotHandler(telepot.aio.helper.ChatHandler):
         elif (me.conversation_flow is 8):
             data = cyclos_api.search(me.username, me.password, msg['text'])
             for advert in data:
-                advert = cleanhtml(advert)
-                advert_styled = '<b>' + advert['name'] + '</b>\n'
-                advert_styled += advert['description'] + '\n'
-                advert_styled += 'Precio: ' + advert['price'] + '\n'
-                advert_styled += 'Dueño: ' + advert['owner']['display'] + '\n'
+                advert_styled = '<b>' + cleanhtml(advert['name']) + '</b>\n'
+                advert_styled += cleanhtml(advert['description']) + '\n'
+                advert_styled += 'Precio: ' + cleanhtml(advert['price']) + '\n'
+                advert_styled += 'Dueño: ' + cleanhtml(advert['owner']['display']) + '\n'
                 await self.sender.sendMessage(advert_styled, 'HTML')
             me.conversation_flow = 99
             me.save()
