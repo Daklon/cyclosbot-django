@@ -9,5 +9,5 @@ psycopg2==2.7.3.1
 pytz==2017.2
 requests==2.18.4
 telepot==12.3
-urllib3==1.22
+urllib3==1.26.5
 yarl==0.12.0
